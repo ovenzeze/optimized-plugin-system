@@ -1,5 +1,6 @@
 import importlib
 import os
+import asyncio
 
 class PluginSystem:
     def __init__(self, plugin_dir='plugins'):
@@ -17,9 +18,13 @@ class PluginSystem:
                     plugin_name = module.register()
                     self.plugins[plugin_name] = module
 
-    def execute_plugin(self, plugin_name, *args, **kwargs):
+    async def execute_plugin(self, plugin_name, *args, **kwargs):
         if plugin_name in self.plugins:
-            return self.plugins[plugin_name].run(*args, **kwargs)
+            plugin = self.plugins[plugin_name]
+            if asyncio.iscoroutinefunction(plugin.run):
+                return await plugin.run(*args, **kwargs)
+            else:
+                return plugin.run(*args, **kwargs)
         else:
             raise ValueError(f"Plugin {plugin_name} not found")
 
